@@ -2,3 +2,6 @@
 .env
 fAIk_backend/
 alembic/versions/
+__pycache__/
+*.py[cod]
+*$py.class
