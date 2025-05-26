@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import auth
+from app.routes import auth, otp
 from app.database import Base, engine
 
 Base.metadata.create_all(bind=engine)
@@ -27,6 +27,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth.router)
+app.include_router(otp.router, prefix="/auth/otp")
 
 @app.get("/")
 def read_root():

@@ -63,15 +63,23 @@ def create_user(db: Session, user: UserCreate) -> User:
         first_name=user.first_name,
         last_name=user.last_name,
         is_active=True,
-        is_verified=False,  # Email verification will set this to True
-        verification_token=verification_token,
-        verification_token_expires=datetime.utcnow() + timedelta(hours=24)
+        is_verified=False,  # legacy field
+        is_email_verified=False
     )
     db.add(db_user)
     db.commit()
     db.refresh(db_user)
 
-    utils.email.send_verification_email(email=user.email, token=verification_token)
+    # Generate and send OTP for email verification
+    from app.services import otp as otp_service
+    from app.utils.email import send_email
+    otp = otp_service.create_otp(db, user.email, purpose="email_verification")
+    send_email(
+        email_to=user.email,
+        subject="Verify your email",
+        template_name=f"Your verification OTP is: {otp.otp_code}",
+        environment={}
+    )
     return db_user
 
 
