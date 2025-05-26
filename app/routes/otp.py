@@ -6,6 +6,7 @@ from app.models import OTP
 from sqlalchemy.orm import Session
 from app.schemas.message import Message
 from app.utils.email import send_email
+from app.models.users import User  # <-- Add this import
 router = APIRouter()
 
 @router.post("/request-otp", response_model=Message)
@@ -57,4 +58,10 @@ def verify_otp(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid or expired OTP"
         )
+    # Mark email as verified if purpose is email_verification
+    if purpose == "email_verification":
+        user = db.query(User).filter(User.email == email).first()
+        if user:
+            user.is_email_verified = True
+            db.commit()
     return {"message": "OTP verified successfully"}

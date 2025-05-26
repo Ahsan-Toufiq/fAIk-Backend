@@ -77,13 +77,13 @@ def verify_email(token: str, db: Session = Depends(get_db)):
 @router.post("/resend-verification", response_model=Message)
 def resend_verification(
     background_tasks: BackgroundTasks,
-    email_address: str,  # Changed
+    email_address: str,
     db: Session = Depends(get_db),
 ):
     """
     Resend verification email
     """
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email_address).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -104,7 +104,7 @@ def resend_verification(
     # Send email in background
     background_tasks.add_task(
         email.send_verification_email,
-        email=email_address,  # Updated
+        email=email_address,
         token=new_token
     )
     
@@ -113,23 +113,23 @@ def resend_verification(
 @router.post("/forgot-password", response_model=Message)
 def forgot_password(
     background_tasks: BackgroundTasks,
-    email_address: str,  # Changed
+    email_address: str,
     db: Session = Depends(get_db),
 ):
     """
     Request password reset
     """
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.email == email_address).first()
     if user:
-        reset_token = security.generate_password_reset_token(email)
+        reset_token = security.generate_password_reset_token(email_address)
         user.reset_password_token = reset_token
         user.reset_password_token_expires = datetime.utcnow() + timedelta(hours=1)
         db.commit()
         
         background_tasks.add_task(
-        email.send_password_reset_email,
-        email=email_address,  # Updated
-        token=reset_token
+            email.send_password_reset_email,
+            email=email_address,
+            token=reset_token
         )
     
     # Always return success to prevent email enumeration

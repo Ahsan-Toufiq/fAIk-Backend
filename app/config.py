@@ -33,6 +33,8 @@ class Settings(BaseSettings):
     EMAILS_FROM: Optional[str] = None
     SMTP_TLS: bool = True  # Default to True for security
     SMTP_SSL: bool = False  # Typically use either TLS or SSL, not both
+
+    FRONTEND_URL: str = "http://localhost:3000"
     
     class Config:
         env_file = ".env"
