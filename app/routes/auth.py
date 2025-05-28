@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
 from fastapi import BackgroundTasks
 from app.schemas.message import Message
-from app.schemas.users import UserOut, UserCreate
+from app.schemas.users import UserOut, UserCreate, GoogleAuth, FacebookAuth
 from app.schemas.token import Token
 from app.models.users import User
 from app.database import get_db
@@ -17,6 +17,7 @@ from app.services.auth import (
     reset_password,
     oauth2_scheme
 )
+from app.services import social_auth
 from app.utils import security, email
 from app.config import settings
 from app.services import otp as otp_service
@@ -196,3 +197,101 @@ def verify_otp(
             detail="Invalid or expired OTP"
         )
     return {"message": "OTP verified successfully"}
+
+@router.post("/google", response_model=Token)
+async def google_auth(
+    auth_data: GoogleAuth,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate or register user with Google
+    """
+    try:
+        google_data = await social_auth.verify_google_token(auth_data.token)
+        user = await social_auth.get_or_create_google_user(db, google_data)
+        return social_auth.create_social_auth_token(user)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Google authentication: {str(e)}"
+        )
+
+@router.post("/facebook", response_model=Token)
+async def facebook_auth(
+    auth_data: FacebookAuth,
+    db: Session = Depends(get_db)
+):
+    """
+    Authenticate or register user with Facebook
+    """
+    try:
+        facebook_data = await social_auth.verify_facebook_token(auth_data.token)
+        user = await social_auth.get_or_create_facebook_user(db, facebook_data)
+        return social_auth.create_social_auth_token(user)
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error during Facebook authentication: {str(e)}"
+        )
+
+@router.post("/data-deletion", response_model=Message)
+async def data_deletion(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    Endpoint for Facebook data deletion requests.
+    This endpoint will be called by Facebook when a user requests data deletion.
+    """
+    try:
+        # Get the signed request from Facebook
+        signed_request = await request.json()
+        
+        # Verify the request is from Facebook
+        if not signed_request.get('user_id'):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid request"
+            )
+        
+        # Find and delete the user's data
+        user = db.query(User).filter(User.facebook_id == signed_request['user_id']).first()
+        if user:
+            # Delete user data
+            db.delete(user)
+            db.commit()
+            
+            return {
+                "message": "User data deleted successfully",
+                "url": f"{settings.FRONTEND_URL}/data-deletion-confirmation",
+                "confirmation_code": signed_request['user_id']
+            }
+        
+        return {
+            "message": "No user data found",
+            "url": f"{settings.FRONTEND_URL}/data-deletion-confirmation",
+            "confirmation_code": signed_request['user_id']
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error processing data deletion request: {str(e)}"
+        )
+
+@router.get("/data-deletion-status/{user_id}", response_model=Message)
+async def data_deletion_status(
+    user_id: str,
+    db: Session = Depends(get_db)
+):
+    """
+    Check the status of a data deletion request
+    """
+    user = db.query(User).filter(User.facebook_id == user_id).first()
+    if not user:
+        return {"message": "Data deletion completed"}
+    return {"message": "Data deletion in progress"}

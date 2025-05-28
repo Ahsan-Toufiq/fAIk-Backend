@@ -84,14 +84,20 @@ class UserCreate(UserBase):
             raise ValueError("Passwords do not match")
         return v
 
-class UserCreateGoogle(UserBase):
+class SocialAuthBase(UserBase):
+    token: str  # Auth token for verification
+
+class GoogleAuth(SocialAuthBase):
     google_id: str
-    token: str  # Google auth token for verification
+
+class FacebookAuth(SocialAuthBase):
+    facebook_id: str
 
 class UserOut(UserBase):
     id: int
     is_active: bool
     is_verified: bool
+    is_email_verified: bool
 
     class Config:
         orm_mode = True

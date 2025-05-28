@@ -1,6 +1,7 @@
 from pydantic import PostgresDsn
 from pydantic import BaseSettings
 from typing import Optional
+from pydantic import validator
 
 class Settings(BaseSettings):
     # PostgreSQL Database
@@ -17,25 +18,32 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
-    GOOGLE_CLIENT_ID: Optional[str] = None
-    GOOGLE_CLIENT_SECRET: Optional[str] = None
-    SMTP_HOST: Optional[str] = None
-    SMTP_PORT: Optional[int] = None
-    SMTP_USER: Optional[str] = None
-    SMTP_PASSWORD: Optional[str] = None
-    EMAILS_FROM: Optional[str] = None
+    
+    # OAuth Settings
+    GOOGLE_CLIENT_ID: str
+    FACEBOOK_APP_ID: str
+    FACEBOOK_APP_SECRET: str
     
     # Email configuration
     SMTP_HOST: Optional[str] = None
-    SMTP_PORT: Optional[int] = None
+    SMTP_PORT: Optional[int] = 587  # Default to 587 if not set
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     EMAILS_FROM: Optional[str] = None
-    SMTP_TLS: bool = True  # Default to True for security
-    SMTP_SSL: bool = False  # Typically use either TLS or SSL, not both
+    SMTP_TLS: bool = True
+    SMTP_SSL: bool = False
 
     FRONTEND_URL: str = "http://localhost:3000"
     
+    @validator("SMTP_PORT", pre=True, always=True)
+    def cast_smtp_port(cls, v):
+        if v is None:
+            return 587
+        # Remove comments and whitespace
+        if isinstance(v, str):
+            v = v.split('#')[0].strip()
+        return int(v)
+
     class Config:
         env_file = ".env"
 

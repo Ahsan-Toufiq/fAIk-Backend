@@ -17,6 +17,7 @@ class User(Base):
     verification_token = Column(String, nullable=True)
     verification_token_expires = Column(DateTime, nullable=True)
     google_id = Column(String, unique=True, nullable=True)
+    facebook_id = Column(String, unique=True, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     reset_password_token = Column(String, nullable=True)
