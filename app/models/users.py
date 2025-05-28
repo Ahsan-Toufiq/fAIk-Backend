@@ -10,6 +10,7 @@ class User(Base):
     hashed_password = Column(String, nullable=True)  # Nullable for OAuth users
     first_name = Column(String(50), nullable=True)
     last_name = Column(String(50), nullable=True)
+    phone = Column(String(20), nullable=True)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
     is_email_verified = Column(Boolean, default=False)

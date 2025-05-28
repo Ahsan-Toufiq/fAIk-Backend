@@ -62,6 +62,7 @@ def create_user(db: Session, user: UserCreate) -> User:
         hashed_password=hashed_password,
         first_name=user.first_name,
         last_name=user.last_name,
+        phone=user.phone,
         is_active=True,
         is_verified=False,  # legacy field
         is_email_verified=False
