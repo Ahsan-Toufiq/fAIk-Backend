@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from fastapi import BackgroundTasks
 from app.schemas.message import Message
-from app.schemas.users import UserOut, UserCreate, GoogleAuth, FacebookAuth
+from app.schemas.users import UserOut, UserCreate, GoogleAuth, FacebookAuth, MicrosoftAuth
 from app.schemas.token import Token
 from app.models.users import User
 from app.database import get_db
@@ -18,6 +18,7 @@ from app.services.auth import (
     oauth2_scheme
 )
 from app.services import social_auth
+from app.services.microsoft_auth import microsoft_auth_service
 from app.utils import security, email
 from app.config import settings
 from app.services import otp as otp_service
@@ -53,6 +54,27 @@ def login(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Inactive user"
         )
+    
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = security.create_access_token(
+        data={"sub": user.email},
+        expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.get("/microsoft/login")
+def microsoft_login():
+    """
+    Get Microsoft OAuth login URL
+    """
+    return {"url": microsoft_auth_service.get_authorization_url()}
+
+@router.post("/microsoft/callback", response_model=Token)
+async def microsoft_callback(code: str, db: Session = Depends(get_db)):
+    """
+    Handle Microsoft OAuth callback
+    """
+    user = await microsoft_auth_service.authenticate_user(db, code)
     
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = security.create_access_token(

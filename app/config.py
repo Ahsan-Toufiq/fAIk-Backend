@@ -20,18 +20,22 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
     
     # OAuth Settings
-    GOOGLE_CLIENT_ID: str
-    FACEBOOK_APP_ID: str
-    FACEBOOK_APP_SECRET: str
+    GOOGLE_CLIENT_ID: Optional[str] = None
+    GOOGLE_CLIENT_SECRET: Optional[str] = None
+    FACEBOOK_APP_ID: Optional[str] = None
+    FACEBOOK_APP_SECRET: Optional[str] = None
+    MICROSOFT_CLIENT_ID: Optional[str] = None
+    MICROSOFT_CLIENT_SECRET: Optional[str] = None
+    MICROSOFT_TENANT_ID: Optional[str] = None  # For Azure AD
     
     # Email configuration
     SMTP_HOST: Optional[str] = None
-    SMTP_PORT: Optional[int] = 587  # Default to 587 if not set
+    SMTP_PORT: Optional[int] = None
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
     EMAILS_FROM: Optional[str] = None
-    SMTP_TLS: bool = True
-    SMTP_SSL: bool = False
+    SMTP_TLS: bool = True  # Default to True for security
+    SMTP_SSL: bool = False  # Typically use either TLS or SSL, not both
 
     FRONTEND_URL: str = "http://localhost:3000"
     

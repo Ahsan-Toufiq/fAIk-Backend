@@ -93,6 +93,9 @@ class GoogleAuth(SocialAuthBase):
 class FacebookAuth(SocialAuthBase):
     facebook_id: str
 
+class MicrosoftAuth(SocialAuthBase):
+    microsoft_id: str
+
 class UserOut(UserBase):
     id: int
     is_active: bool
