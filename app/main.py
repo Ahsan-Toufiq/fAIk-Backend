@@ -3,18 +3,27 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import auth, otp
 from app.database import Base, engine
+from app.middleware.error_handler import setup_error_handlers
+from app.utils.logger import setup_logger
 
-Base.metadata.create_all(bind=engine)
+# Setup logging
+logger = setup_logger(log_file="logs/app.log")
 
-# async def create_tables():
-#     async with engine.begin() as conn:
-#         await conn.run_sync(Base.metadata.create_all)
+# Create database tables
+try:
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables created successfully")
+except Exception as e:
+    logger.error(f"Failed to create database tables: {str(e)}", exc_info=True)
 
 app = FastAPI(
     title="Auth Service",
     description="backend for fAIk React Native app",
     version="0.1.0"
 )
+
+# Setup error handlers
+setup_error_handlers(app)
 
 # CORS configuration for React Native app
 app.add_middleware(
@@ -31,4 +40,13 @@ app.include_router(otp.router, prefix="/auth/otp")
 
 @app.get("/")
 def read_root():
+    logger.info("Root endpoint accessed")
     return {"message": "fAIk's backend is running"}
+
+@app.on_event("startup")
+async def startup_event():
+    logger.info("Application starting up")
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    logger.info("Application shutting down")
