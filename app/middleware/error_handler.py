@@ -4,6 +4,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from jose import JWTError
 import traceback
+import logging
 from typing import Union
 
 from app.exceptions import BaseCustomException, convert_to_http_exception
@@ -85,7 +86,7 @@ async def error_handler_middleware(request: Request, call_next):
                 "error_type": "InternalServerError",
                 "details": {
                     "original_error": str(e),
-                    "traceback": traceback.format_exc() if logger.isEnabledFor(logger.DEBUG) else None
+                    "traceback": traceback.format_exc() if logger.isEnabledFor(logging.DEBUG) else None
                 }
             }
         )
@@ -116,6 +117,19 @@ def setup_error_handlers(app):
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         """Handle validation errors"""
         logger.error(f"Validation error: {str(exc)}")
+        
+        # Handle FormData serialization issue
+        body_detail = None
+        if hasattr(exc, 'body') and exc.body is not None:
+            try:
+                # Try to convert body to string if it's FormData
+                if hasattr(exc.body, '__class__'):
+                    body_detail = f"<{exc.body.__class__.__name__}>"
+                else:
+                    body_detail = str(exc.body)
+            except:
+                body_detail = "<unserializable>"
+        
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             content={
@@ -123,7 +137,7 @@ def setup_error_handlers(app):
                 "error_type": "ValidationError",
                 "details": {
                     "errors": exc.errors(),
-                    "body": exc.body
+                    "body": body_detail
                 }
             }
         )
@@ -170,7 +184,7 @@ def setup_error_handlers(app):
                 "error_type": "InternalServerError",
                 "details": {
                     "original_error": str(exc),
-                    "traceback": traceback.format_exc() if logger.isEnabledFor(logger.DEBUG) else None
+                    "traceback": traceback.format_exc() if logger.isEnabledFor(logging.DEBUG) else None
                 }
             }
         ) 
